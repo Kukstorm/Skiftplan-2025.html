@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Schedule Checker 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for the calendar days */
+        .calendar-day {
+            min-height: 80px;
+        }
+        /* Simple transition for view switching */
+        .view-container {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">Work Schedule 2025</h1>
+
+        <!-- View Toggles -->
+        <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+            <button id="daily-view-btn" class="px-4 py-2 -mb-px font-semibold text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400 focus:outline-none">Daily Checker</button>
+            <button id="monthly-view-btn" class="px-4 py-2 font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 focus:outline-none">Monthly View</button>
+        </div>
+
+        <!-- Daily View Container -->
+        <div id="daily-view" class="view-container">
+            <p class="text-center text-gray-500 dark:text-gray-400 mb-6">Select a date to find your shift.</p>
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <input type="date" id="date-input" class="w-full p-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" min="2025-06-09" max="2025-12-31">
+                <button id="search-btn" class="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition shadow-md">
+                    Check Shift
+                </button>
+            </div>
+            <div id="result-container" class="bg-gray-50 dark:bg-gray-700 p-6 rounded-xl min-h-[120px] flex items-center justify-center text-center">
+                <p id="result-text" class="text-lg text-gray-600 dark:text-gray-300">Your shift information will appear here.</p>
+            </div>
+        </div>
+        
+        <!-- Monthly View Container -->
+        <div id="monthly-view" class="view-container hidden">
+             <div class="flex justify-center items-center gap-4 mb-4">
+                <select id="month-select" class="p-2 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                <select id="year-select" class="p-2 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-center font-semibold text-sm text-gray-600 dark:text-gray-300 mb-2">
+                <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+            </div>
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                <!-- Calendar days will be generated here -->
+            </div>
+        </div>
+
+        <!-- Legend section -->
+        <div class="mt-8">
+            <h2 class="text-lg font-semibold text-center mb-4 text-gray-700 dark:text-gray-300">Shift Legend</h2>
+            <div id="legend-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const shiftTypes = {
+            'fri': { name: 'Fridag', time: 'Day Off', color: 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200' },
+            'f': { name: 'Formiddag', time: '07:00 - 15:00', color: 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200' },
+            'd': { name: 'Formiddag', time: '07:00 - 15:00', color: 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200' },
+            'e': { name: 'Ettermiddag', time: '15:00 - 23:00', color: 'bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200' },
+            'n': { name: 'Natt', time: '23:00 - 07:00', color: 'bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200' },
+            'F12': { name: '12t Formiddag', time: '07:00 - 19:00', color: 'bg-sky-100 dark:bg-sky-800 text-sky-800 dark:text-sky-200' },
+            'n12': { name: '12t Natt', time: '19:00 - 07:00', color: 'bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200' }
+        };
+        // Corrected schedule object
+        const schedule = {"2025-06-09":"e","2025-06-10":"e","2025-06-11":"fri","2025-06-12":"fri","2025-06-13":"fri","2025-06-14":"fri","2025-06-15":"fri","2025-06-16":"f","2025-06-17":"f","2025-06-18":"n","2025-06-19":"n","2025-06-20":"fri","2025-06-21":"fri","2025-06-22":"fri","2025-06-23":"fri","2025-06-24":"fri","2025-06-25":"e","2025-06-26":"e","2025-06-27":"n12","2025-06-28":"n12","2025-06-29":"n12","2025-06-30":"fri","2025-07-01":"fri","2025-07-02":"f","2025-07-03":"f","2025-07-04":"fri","2025-07-05":"fri","2025-07-06":"fri","2025-07-07":"d","2025-07-08":"d","2025-07-09":"d","2025-07-10":"d","2025-07-11":"fri","2025-07-12":"fri","2025-07-13":"fri","2025-07-14":"n","2025-07-15":"n","2025-07-16":"fri","2025-07-17":"fri","2025-07-18":"F12","2025-07-19":"F12","2025-07-20":"F12","2025-07-21":"e","2025-07-22":"e","2025-07-23":"fri","2025-07-24":"fri","2025-07-25":"fri","2025-07-26":"fri","2025-07-27":"fri","2025-07-28":"f","2025-07-29":"f","2025-07-30":"n","2025-07-31":"n","2025-08-01":"fri","2025-08-02":"fri","2025-08-03":"fri","2025-08-04":"fri","2025-08-05":"fri","2025-08-06":"e","2025-08-07":"e","2025-08-08":"n12","2025-08-09":"n12","2025-08-10":"n12","2025-08-11":"fri","2025-08-12":"fri","2025-08-13":"f","2025-08-14":"f","2025-08-15":"fri","2025-08-16":"fri","2025-08-17":"fri","2025-08-18":"d","2025-08-19":"d","2025-08-20":"d","2025-08-21":"d","2025-08-22":"fri","2025-08-23":"fri","2025-08-24":"fri","2025-08-25":"n","2025-08-26":"n","2025-08-27":"fri","2025-08-28":"fri","2025-08-29":"F12","2025-08-30":"F12","2025-08-31":"F12","2025-09-01":"e","2025-09-02":"e","2025-09-03":"fri","2025-09-04":"fri","2025-09-05":"fri","2025-09-06":"fri","2025-09-07":"fri","2025-09-08":"f","2025-09-09":"f","2025-09-10":"n","2025-09-11":"n","2025-09-12":"fri","2025-09-13":"fri","2025-09-14":"fri","2025-09-15":"fri","2025-09-16":"fri","2025-09-17":"e","2025-09-18":"e","2025-09-19":"n12","2025-09-20":"n12","2025-09-21":"n12","2025-09-22":"fri","2025-09-23":"fri","2025-09-24":"f","2025-09-25":"f","2025-09-26":"fri","2025-09-27":"fri","2025-09-28":"fri","2025-09-29":"d","2025-09-30":"d","2025-10-01":"d","2025-10-02":"d","2025-10-03":"fri","2025-10-04":"fri","2025-10-05":"fri","2025-10-06":"n","2025-10-07":"n","2025-10-08":"fri","2025-10-09":"fri","2025-10-10":"F12","2025-10-11":"F12","2025-10-12":"F12","2025-10-13":"e","2025-10-14":"e","2025-10-15":"fri","2025-10-16":"fri","2025-10-17":"fri","2025-10-18":"fri","2025-10-19":"fri","2025-10-20":"f","2025-10-21":"f","2025-10-22":"n","2025-10-23":"n","2025-10-24":"fri","2025-10-25":"fri","2025-10-26":"fri","2025-10-27":"fri","2025-10-28":"fri","2025-10-29":"e","2025-10-30":"e","2025-10-31":"n12","2025-11-01":"n12","2025-11-02":"n12","2025-11-03":"fri","2025-11-04":"fri","2025-11-05":"f","2025-11-06":"f","2025-11-07":"fri","2025-11-08":"fri","2025-11-09":"fri","2025-11-10":"d","2025-11-11":"d","2025-11-12":"d","2025-11-13":"d","2025-11-14":"fri","2025-11-15":"fri","2025-11-16":"fri","2025-11-17":"n","2025-11-18":"n","2025-11-19":"fri","2025-11-20":"fri","2025-11-21":"F12","2025-11-22":"F12","2025-11-23":"F12","2025-11-24":"e","2025-11-25":"e","2025-11-26":"fri","2025-11-27":"fri","2025-11-28":"fri","2025-11-29":"fri","2025-11-30":"fri","2025-12-01":"f","2025-12-02":"f","2025-12-03":"n","2025-12-04":"n","2025-12-05":"fri","2025-12-06":"fri","2025-12-07":"fri","2025-12-08":"fri","2025-12-09":"fri","2025-12-10":"e","2025-12-11":"e","2025-12-12":"n12","2025-12-13":"n12","2025-12-14":"n12","2025-12-15":"fri","2025-12-16":"fri","2025-12-17":"f","2025-12-18":"f","2025-12-19":"fri","2025-12-20":"fri","2025-12-21":"fri","2025-12-22":"d","2025-12-23":"d","2025-12-24":"d","2025-12-25":"d","2025-12-26":"fri","2025-12-27":"fri","2025-12-28":"fri","2025-12-29":"n","2025-12-30":"n","2025-12-31":"fri"};
+
+        // --- DOM ELEMENTS ---
+        const dailyViewBtn = document.getElementById('daily-view-btn');
+        const monthlyViewBtn = document.getElementById('monthly-view-btn');
+        const dailyView = document.getElementById('daily-view');
+        const monthlyView = document.getElementById('monthly-view');
+        // Daily View Elements
+        const dateInput = document.getElementById('date-input');
+        const searchBtn = document.getElementById('search-btn');
+        const resultContainer = document.getElementById('result-container');
+        const resultText = document.getElementById('result-text');
+        // Monthly View Elements
+        const monthSelect = document.getElementById('month-select');
+        const yearSelect = document.getElementById('year-select');
+        const calendarGrid = document.getElementById('calendar-grid');
+        // Shared Element
+        const legendContainer = document.getElementById('legend-container');
+
+
+        // --- DAILY VIEW FUNCTIONS ---
+        function findAndDisplayShift() {
+            const selectedDate = dateInput.value;
+            if (!selectedDate) {
+                displayError("Please select a date first.");
+                return;
+            }
+            const shiftCode = schedule[selectedDate];
+            if (shiftCode && shiftTypes[shiftCode]) {
+                const shiftInfo = shiftTypes[shiftCode];
+                displayResult(shiftInfo, selectedDate);
+            } else {
+                displayNotFound(selectedDate);
+            }
+        }
+        function formatDisplayDate(dateString) {
+            const date = new Date(dateString + 'T00:00:00'); // Avoid timezone issues
+            return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        function displayResult(shiftInfo, dateString) {
+            resultContainer.className = `p-6 rounded-xl min-h-[120px] flex items-center justify-center text-center transition-all duration-300 ${shiftInfo.color}`;
+            resultText.innerHTML = `<div class="font-semibold text-lg md:text-xl">${shiftInfo.name}</div><div class="text-sm md:text-base opacity-90">${shiftInfo.time}</div><div class="text-xs md:text-sm opacity-70 mt-2">${formatDisplayDate(dateString)}</div>`;
+        }
+        function displayError(message) {
+             resultContainer.className = 'p-6 rounded-xl min-h-[120px] flex items-center justify-center text-center transition-all duration-300 bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200';
+             resultText.innerHTML = `<div class="font-semibold">${message}</div>`;
+        }
+        function displayNotFound(dateString) {
+             resultContainer.className = 'p-6 rounded-xl min-h-[120px] flex items-center justify-center text-center transition-all duration-300 bg-gray-100 dark:bg-gray-600';
+             resultText.innerHTML = `<div class="font-semibold text-lg">No Shift Data</div><div class="text-sm opacity-80 mt-1">No schedule found for ${formatDisplayDate(dateString)}.</div>`;
+        }
+
+
+        // --- MONTHLY VIEW FUNCTIONS ---
+        function populateSelectors() {
+            const months = ["June", "July", "August", "September", "October", "November", "December"];
+            months.forEach((month, index) => {
+                const option = document.createElement('option');
+                option.value = index + 5; // June is 5 (0-indexed months)
+                option.textContent = month;
+                monthSelect.appendChild(option);
+            });
+            yearSelect.innerHTML = '<option value="2025">2025</option>';
+            
+            const today = new Date();
+            if(today.getFullYear() === 2025) {
+                // Set month selector to current month if it exists in the list
+                if (today.getMonth() >= 5) {
+                    monthSelect.value = today.getMonth();
+                }
+            }
+        }
+
+        function renderCalendar() {
+            const year = parseInt(yearSelect.value);
+            const month = parseInt(monthSelect.value);
+            calendarGrid.innerHTML = '';
+            const firstDayOfMonth = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Adjust starting day so Monday is 0, Sunday is 6
+            let startingDayIndex = firstDayOfMonth.getDay() - 1;
+            if (startingDayIndex < 0) startingDayIndex = 6; 
+
+            // Add blank cells for padding at the start of the month
+            for (let i = 0; i < startingDayIndex; i++) {
+                const blankCell = document.createElement('div');
+                blankCell.className = 'rounded-lg bg-gray-50 dark:bg-gray-700/50';
+                calendarGrid.appendChild(blankCell);
+            }
+
+            // Add cells for each day of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const shiftCode = schedule[dateStr];
+                
+                let bgColorClass = 'bg-white dark:bg-gray-800';
+                let contentHTML = `<div class="font-bold text-gray-800 dark:text-gray-200">${day}</div>`;
+
+                if (shiftCode && shiftTypes[shiftCode]) {
+                    const shift = shiftTypes[shiftCode];
+                    bgColorClass = shift.color;
+                    contentHTML += `<div class="mt-1 text-sm font-semibold">${shiftCode.toUpperCase()}</div><div class="text-xs opacity-70 hidden sm:block">${shift.name}</div>`;
+                }
+
+                dayCell.className = `calendar-day rounded-lg p-2 flex flex-col items-center justify-start text-center ${bgColorClass} border border-gray-200 dark:border-gray-700`;
+                dayCell.innerHTML = contentHTML;
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+        
+        // --- GENERAL & INITIALIZATION ---
+        function populateLegend() {
+            legendContainer.innerHTML = '';
+            // Use a Set to avoid duplicate legend entries (for f and d)
+            const addedShifts = new Set();
+            for(const code in shiftTypes){
+                const shift = shiftTypes[code];
+                if (addedShifts.has(shift.name)) continue;
+                
+                const item = document.createElement('div');
+                item.className = `p-2 rounded-lg flex flex-col items-center justify-center text-center ${shift.color}`;
+                item.innerHTML = `<div class="font-bold">${code.toUpperCase()}</div><div class="text-xs opacity-90">${shift.name}</div><div class="text-xs opacity-70">${shift.time}</div>`;
+                legendContainer.appendChild(item);
+                addedShifts.add(shift.name);
+            }
+        }
+        
+        function switchView(viewToShow) {
+             const isMonthly = viewToShow === 'monthly';
+             
+             // Toggle visibility
+             monthlyView.classList.toggle('hidden', !isMonthly);
+             dailyView.classList.toggle('hidden', isMonthly);
+             
+             // Update button styles
+             monthlyViewBtn.classList.toggle('text-blue-600', isMonthly);
+             monthlyViewBtn.classList.toggle('border-blue-600', isMonthly);
+             monthlyViewBtn.classList.toggle('dark:text-blue-400', isMonthly);
+             monthlyViewBtn.classList.toggle('dark:border-blue-400', isMonthly);
+             monthlyViewBtn.classList.toggle('text-gray-500', !isMonthly);
+
+             dailyViewBtn.classList.toggle('text-blue-600', !isMonthly);
+             dailyViewBtn.classList.toggle('border-blue-600', !isMonthly);
+             dailyViewBtn.classList.toggle('dark:text-blue-400', !isMonthly);
+             dailyViewBtn.classList.toggle('dark:border-blue-400', !isMonthly);
+             dailyViewBtn.classList.toggle('text-gray-500', isMonthly);
+
+             if (isMonthly) {
+                 renderCalendar();
+             }
+        }
+
+        // --- EVENT LISTENERS ---
+        searchBtn.addEventListener('click', findAndDisplayShift);
+        dateInput.addEventListener('keydown', (e) => e.key === 'Enter' && findAndDisplayShift());
+        dailyViewBtn.addEventListener('click', () => switchView('daily'));
+        monthlyViewBtn.addEventListener('click', () => switchView('monthly'));
+        monthSelect.addEventListener('change', renderCalendar);
+        yearSelect.addEventListener('change', renderCalendar);
+
+        // --- INITIALIZATION ---
+        function init() {
+            populateLegend();
+            populateSelectors();
+            
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            if (yyyy === 2025) {
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const todayString = `${yyyy}-${mm}-${dd}`;
+                if (schedule[todayString]) {
+                    dateInput.value = todayString;
+                    findAndDisplayShift();
+                }
+            }
+            
+            // Initial render for the monthly view (it's hidden but ready)
+            renderCalendar();
+        }
+
+        // Run all initialization code once the DOM is ready
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
